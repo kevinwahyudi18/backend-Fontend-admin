@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  username      String  @unique
+  email         String  @unique
+  password      String 
+  phone         String
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  address       Address[]
+  cart          Cart[]
+}
+
+model Address {
+  id            Int      @id @default(autoincrement())
+  user_id       Int      
+  address       String  
+  city          String 
+  postal_code   String 
+  phone         String
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  user          User     @relation(fields: [user_id], references: [id])
+  order         Order[]
+}
+
+model Cart {
+  id            Int      @id @default(autoincrement())
+  user_id       Int   @unique
+  shipping_cost Int?
+  total_payment Int           @default(0)
+  total_weight  Int           @default(0)
+  total_price   Int           @default(0)
+  courier       Courier?
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  user          User     @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  cart_product  Cart_Product[]
+  order         Order[]
+}
+
+enum Courier {
+  jne
+  pos
+  tiki
+}
+
+model Cart_Product {
+  id            Int      @id @default(autoincrement())
+  product_id    Int
+  cart_id       Int
+  quantity      Int
+  price         Int
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  cart          Cart     @relation(fields: [cart_id], references: [id])
+  product       Product  @relation(fields: [product_id], references: [id])
+}
+
+model Product {
+  id              Int      @id @default(autoincrement())
+  category_id     Int
+  warehouse_id    Int
+  name            String
+  description     String  
+  type            String 
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @default(now())
+  Cart_Product    Cart_Product[]
+  product_detail  Product_Detail[]
+  category        Category  @relation(fields: [category_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  warehouse       Warehouse @relation(fields: [warehouse_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model Product_Detail {
+  id            Int      @id @default(autoincrement())
+  product_id    Int 
+  photo         String
+  color         String
+  stock         Int
+  price         Int
+  weight        Int  
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  product       Product  @relation(fields: [product_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model Category {
+  id            Int      @id @default(autoincrement())
+  category_name String 
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  product       Product[] 
+}
+
+model Warehouse {
+  id              Int      @id @default(autoincrement())
+  admin_id        Int? 
+  warehouse_name  String 
+  address         String 
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  product         Product[] 
+  admin           Admin?   @relation(fields: [admin_id], references: [id])  
+}
+
+model Admin {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
+  email         String 
+  password      String 
+  address       String 
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  warehouse     Warehouse[]
+  upload        Upload[]
+}
+
+model Upload {
+  id            Int      @id @default(autoincrement())
+  admin_id      Int 
+  payment_id    Int 
+  photo         String 
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  admin         Admin   @relation(fields: [admin_id], references: [id])  
+  payment       Payment   @relation(fields: [payment_id], references: [id])  
+}
+
+model Payment_Method {
+  id            Int      @id @default(autoincrement())
+  value         String 
+  payment       Payment[]
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @default(now())
+}
+
+model Payment {
+  id                   Int      @id @default(autoincrement())
+  order_id             Int 
+  cart_id              Int 
+  payment_method_id    Int 
+  total_price          Int
+  upload               Upload[]
+  payment_method       Payment_Method @relation(fields: [payment_method_id], references: [id]) 
+  order                Order @relation(fields: [order_id], references:[id] )
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @default(now())
+}
+
+model Order {
+  id                Int      @id @default(autoincrement())
+  cart_id           Int 
+  address_id        Int 
+  shipping_price    Int 
+  price             Int 
+  payment           Payment[]
+  address           Address @relation(fields: [address_id], references:[id] )
+  cart              Cart @relation(fields: [cart_id], references:[id] )
+  order_status      Order_Status[]
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @default(now())
+}
+
+model Order_Status {
+  id            Int      @id @default(autoincrement())
+  order_id      Int
+  status        String 
+  order         Order    @relation(fields: [order_id], references:[id] )
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @default(now())
+}
